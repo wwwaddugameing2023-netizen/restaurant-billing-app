@@ -1,0 +1,93 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily Sales Report</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;font-family:Arial;background:#f1f5f9;color:#1e293b}
+.container{max-width:1000px;margin:20px auto}
+.panel{background:white;padding:22px;border-radius:10px;box-shadow:0 3px 12px #0001;margin-bottom:20px}
+h2{color:#172554;margin-top:0}
+form{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input{padding:11px;border:1px solid #cbd5e1;border-radius:6px}
+button{padding:11px 18px;border:0;border-radius:6px;background:#2563eb;color:white;font-weight:bold;cursor:pointer}
+.back{display:inline-block;background:#64748b;color:white;padding:11px 18px;border-radius:6px;text-decoration:none}
+.stat{font-size:25px;font-weight:bold;color:#15803d}
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;min-width:600px}
+th,td{padding:12px;border-bottom:1px solid #e2e8f0;text-align:left}
+th{background:#f8fafc}
+@media print{
+body{background:white;padding:0}
+.no-print{display:none}
+.panel{box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+
+    <div class="panel no-print">
+        <h2>📊 Daily Sales Report</h2>
+
+        <form method="GET" action="/sales">
+            <label for="date">Select Date:</label>
+            <input type="date" id="date" name="date" value="{{ selected_date }}" required>
+            <button type="submit">Search Report</button>
+        </form>
+
+        <br>
+        <a href="/owner" class="back">← Owner Dashboard</a>
+        <button onclick="window.print()">🖨 Print Report</button>
+    </div>
+
+    <div class="panel">
+        <h2>Sales Summary</h2>
+        <p><strong>Selected Date:</strong> {{ selected_date }}</p>
+        <p><strong>Total Orders:</strong> {{ orders|length }}</p>
+        <p><strong>Total Sales:</strong></p>
+        <div class="stat">Rs. {{ "%.2f"|format(total) }}</div>
+    </div>
+
+    <div class="panel">
+        <h2>Order Details</h2>
+
+        <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order ID</th>
+                    <th>Customer</th>
+                    <th>Date & Time</th>
+                    <th>Amount</th>
+                    <th>Bill</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>#{{ order.id }}</td>
+                    <td>{{ order.customer }}</td>
+                    <td>{{ order.order_date }}</td>
+                    <td>Rs. {{ "%.2f"|format(order.total) }}</td>
+                    <td class="no-print">
+                        <a href="/bill/{{ order.id }}" target="_blank">View Bill</a>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="5">Is date par koi order nahi mila.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,426 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Restaurant Billing Dashboard</title>
+
+<style>
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f1f4f8;
+    color: #222;
+}
+header {
+    background: #172337;
+    color: white;
+    padding: 18px 25px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+header h2 { margin: 0; }
+nav { display: flex; gap: 15px; flex-wrap: wrap; }
+nav a {
+    color: white;
+    text-decoration: none;
+    font-size: 14px;
+}
+.container {
+    max-width: 1200px;
+    margin: auto;
+    padding: 20px;
+}
+.stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+    gap: 15px;
+    margin-bottom: 25px;
+}
+.stat, .panel {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px #0000000d;
+}
+.stat h3 { color: #667085; font-size: 14px; }
+.stat strong { font-size: 25px; color: #1677e8; }
+.layout {
+    display: grid;
+    grid-template-columns: 1.4fr 1fr;
+    gap: 20px;
+}
+h2 { margin-top: 0; }
+input {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #ccd2dc;
+    border-radius: 6px;
+    margin: 6px 0;
+}
+button {
+    border: 0;
+    padding: 10px 13px;
+    border-radius: 6px;
+    background: #1677e8;
+    color: white;
+    cursor: pointer;
+    margin: 3px;
+}
+button:hover { opacity: .85; }
+.delete { background: #d93636; }
+.edit { background: #e89a17; }
+.food-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 12px;
+    margin-top: 15px;
+}
+.food {
+    border: 1px solid #e0e5ed;
+    border-radius: 9px;
+    padding: 13px;
+}
+.food h3 { font-size: 16px; }
+.food button { width: 100%; }
+.cart-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    border-bottom: 1px solid #eee;
+    padding: 10px 0;
+}
+.cart-row input { width: 65px; }
+.total {
+    font-size: 22px;
+    font-weight: bold;
+    margin: 18px 0;
+}
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+}
+th, td {
+    padding: 11px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+.table-wrap { overflow-x: auto; }
+.message { padding: 10px; border-radius: 6px; }
+.success { background: #e0f7e9; color: #16743a; }
+.error { background: #ffe6e6; color: #b00020; }
+
+@media(max-width: 750px) {
+    .layout { grid-template-columns: 1fr; }
+    header { padding: 15px; }
+    .container { padding: 12px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h2>Restaurant Billing System</h2>
+    <nav>
+        <a href="/">Dashboard</a>
+        <a href="/sales">Daily Sales</a>
+        <a href="/change-password">Change Password</a>
+        <a href="/logout">Logout</a>
+    </nav>
+</header>
+
+<div class="container">
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% for category, message in messages %}
+            <p class="message {{ category }}">{{ message }}</p>
+        {% endfor %}
+    {% endwith %}
+
+    <h2>Owner Dashboard</h2>
+
+    <div class="stats">
+        <div class="stat">
+            <h3>Today's Sales</h3>
+            <strong>Rs. {{ "%.2f"|format(today_sales) }}</strong>
+        </div>
+        <div class="stat">
+            <h3>Today's Orders</h3>
+            <strong>{{ today_orders }}</strong>
+        </div>
+        <div class="stat">
+            <h3>Total Sales</h3>
+            <strong>Rs. {{ "%.2f"|format(total_sales) }}</strong>
+        </div>
+        <div class="stat">
+            <h3>Total Orders</h3>
+            <strong>{{ total_orders }}</strong>
+        </div>
+    </div>
+
+    <div class="layout">
+
+        <section class="panel">
+            <h2>Food Menu</h2>
+
+            <div class="food-grid">
+                {% for food in foods %}
+                <div class="food">
+                    <h3>{{ food.name }}</h3>
+                    <p>Rs. {{ "%.2f"|format(food.price) }}</p>
+                    <button type="button"
+                        onclick="addToCart({{ food.id }}, {{ food.name|tojson }}, {{ food.price }})">
+                        Add to Order
+                    </button>
+                </div>
+                {% else %}
+                <p>No food items available.</p>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="panel">
+            <h2>Create Customer Bill</h2>
+
+            <label>Customer Name</label>
+            <input type="text" id="customer" placeholder="Customer name">
+
+            <h3>Selected Items</h3>
+            <div id="cart">
+                <p>No items selected.</p>
+            </div>
+
+            <div class="total">
+                Total: Rs. <span id="total">0.00</span>
+            </div>
+
+            <button type="button" onclick="checkout()">
+                Create Bill & Print
+            </button>
+        </section>
+
+    </div>
+
+    <section class="panel" style="margin-top:20px">
+        <h2>Manage Food Items</h2>
+
+        <h3>Add New Food</h3>
+        <form action="/add-food" method="POST">
+            <input type="text" name="name"
+                   placeholder="Food item name" required>
+            <input type="number" name="price"
+                   placeholder="Price in Rs." min="0.01"
+                   step="0.01" required>
+            <button type="submit">Add Food Item</button>
+        </form>
+
+        <h3>Update or Delete Food</h3>
+        <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Food Name</th>
+                    <th>Price</th>
+                    <th>Update</th>
+                    <th>Delete</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for food in foods %}
+                <tr>
+                    <td>
+                        <form id="edit-{{ food.id }}"
+                              action="/update-food/{{ food.id }}"
+                              method="POST">
+                            <input name="name" value="{{ food.name }}" required>
+                            <input name="price" type="number"
+                                   value="{{ food.price }}" min="0.01"
+                                   step="0.01" required>
+                        </form>
+                    </td>
+                    <td>Rs. {{ "%.2f"|format(food.price) }}</td>
+                    <td>
+                        <button class="edit" type="submit"
+                                form="edit-{{ food.id }}">
+                            Update
+                        </button>
+                    </td>
+                    <td>
+                        <form action="/delete-food/{{ food.id }}"
+                              method="POST"
+                              onsubmit="return confirm('Delete this food item?')">
+                            <button class="delete" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+    <section class="panel" style="margin-top:20px">
+        <h2>Recent Orders</h2>
+        <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Bill No.</th>
+                    <th>Customer</th>
+                    <th>Total</th>
+                    <th>Date</th>
+                    <th>Bill</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.id }}</td>
+                    <td>{{ order.customer }}</td>
+                    <td>Rs. {{ "%.2f"|format(order.total) }}</td>
+                    <td>{{ order.order_date }}</td>
+                    <td><a href="/bill/{{ order.id }}">View Bill</a></td>
+                </tr>
+                {% else %}
+                <tr><td colspan="5">No orders yet.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </section>
+
+</div>
+
+<script>
+let cart = [];
+
+function addToCart(id, name, price) {
+    let existing = cart.find(item => item.id === id);
+
+    if (existing) {
+        existing.quantity++;
+    } else {
+        cart.push({
+            id: id,
+            name: name,
+            price: price,
+            quantity: 1
+        });
+    }
+
+    showCart();
+}
+
+function changeQuantity(id, value) {
+    let item = cart.find(item => item.id === id);
+    if (!item) return;
+
+    let quantity = parseInt(value);
+
+    if (!Number.isInteger(quantity) || quantity < 1) {
+        item.quantity = 1;
+    } else {
+        item.quantity = quantity;
+    }
+
+    showCart();
+}
+
+function removeItem(id) {
+    cart = cart.filter(item => item.id !== id);
+    showCart();
+}
+
+function showCart() {
+    let cartDiv = document.getElementById("cart");
+    let total = 0;
+
+    if (cart.length === 0) {
+        cartDiv.innerHTML = "<p>No items selected.</p>";
+    } else {
+        cartDiv.innerHTML = "";
+
+        cart.forEach(item => {
+            let subtotal = item.price * item.quantity;
+            total += subtotal;
+
+            let row = document.createElement("div");
+            row.className = "cart-row";
+
+            let name = document.createElement("span");
+            name.textContent = item.name;
+
+            let quantity = document.createElement("input");
+            quantity.type = "number";
+            quantity.min = "1";
+            quantity.value = item.quantity;
+            quantity.onchange = function() {
+                changeQuantity(item.id, this.value);
+            };
+
+            let amount = document.createElement("span");
+            amount.textContent = "Rs. " + subtotal.toFixed(2);
+
+            let remove = document.createElement("button");
+            remove.className = "delete";
+            remove.textContent = "X";
+            remove.onclick = function() {
+                removeItem(item.id);
+            };
+
+            row.append(name, quantity, amount, remove);
+            cartDiv.appendChild(row);
+        });
+    }
+
+    document.getElementById("total").textContent = total.toFixed(2);
+}
+
+async function checkout() {
+    if (cart.length === 0) {
+        alert("Please select food items first.");
+        return;
+    }
+
+    let customer = document.getElementById("customer").value.trim();
+
+    try {
+        let response = await fetch("/create-order", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                customer: customer || "Walk-in Customer",
+                items: cart.map(item => ({
+                    id: item.id,
+                    quantity: item.quantity
+                }))
+            })
+        });
+
+        let result = await response.json();
+
+        if (!response.ok || !result.success) {
+            alert(result.message || "Order create nahi ho saka.");
+            return;
+        }
+
+        window.location.href = result.bill_url;
+
+    } catch (error) {
+        alert("Server se connection nahi ho saka.");
+    }
+}
+</script>
+
+</body>
+</html>

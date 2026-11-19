@@ -1,0 +1,188 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Owner Dashboard</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial;background:#f1f5f9;color:#1e293b}
+header{background:#172554;color:white;padding:18px 4%;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header h2{margin:0}
+a{text-decoration:none}
+.logout{background:#dc2626;color:white;padding:10px 16px;border-radius:7px}
+.container{width:94%;max-width:1400px;margin:25px auto}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:15px;margin-bottom:22px}
+.stat{background:white;padding:20px;border-radius:10px;box-shadow:0 2px 8px #0001}
+.stat h3{margin:0 0 12px;color:#64748b;font-size:15px}
+.stat p{font-size:25px;font-weight:bold;margin:0;color:#172554}
+.panel{background:white;padding:20px;border-radius:10px;margin-bottom:20px;box-shadow:0 2px 8px #0001}
+h3{margin-top:0}
+input{padding:11px;border:1px solid #cbd5e1;border-radius:6px;margin:5px;width:100%;max-width:250px}
+button{padding:10px 13px;border:0;border-radius:6px;cursor:pointer;font-weight:bold;margin:3px}
+.green{background:#15803d;color:white}
+.blue{background:#2563eb;color:white}
+.red{background:#dc2626;color:white}
+.gray{background:#64748b;color:white}
+.orange{background:#f59e0b;color:#111827}
+table{width:100%;border-collapse:collapse;min-width:650px}
+th,td{padding:11px;border-bottom:1px solid #e2e8f0;text-align:left}
+th{background:#f8fafc}
+.table-wrap{overflow-x:auto}
+.flash{background:#dcfce7;color:#166534;padding:12px;border-radius:6px;margin-bottom:12px}
+.actions{display:flex;flex-wrap:wrap;gap:8px;margin:15px 0}
+@media(max-width:600px){header{padding:15px}.container{width:96%}.panel{padding:13px}}
+</style>
+</head>
+<body>
+
+<header>
+    <h2>👨‍💼 Owner Dashboard</h2>
+    <div>
+        <a href="/" class="orange" style="padding:10px 13px;border-radius:6px;color:#111827">Worker Page</a>
+        <a href="/logout" class="logout">Logout</a>
+    </div>
+</header>
+
+<div class="container">
+
+{% with messages = get_flashed_messages() %}
+{% for message in messages %}
+<div class="flash">{{ message }}</div>
+{% endfor %}
+{% endwith %}
+
+<div class="stats">
+    <div class="stat">
+        <h3>Today's Orders</h3>
+        <p>{{ today_orders }}</p>
+    </div>
+    <div class="stat">
+        <h3>Today's Sales</h3>
+        <p>Rs. {{ "%.2f"|format(today_sales) }}</p>
+    </div>
+    <div class="stat">
+        <h3>All Orders</h3>
+        <p>{{ all_orders }}</p>
+    </div>
+    <div class="stat">
+        <h3>Total Sales</h3>
+        <p>Rs. {{ "%.2f"|format(all_sales) }}</p>
+    </div>
+</div>
+
+<section class="panel">
+    <h3>📊 Sales & Reports</h3>
+    <div class="actions">
+        <a href="/sales"><button class="blue">Daily Sales Report</button></a>
+        <a href="/change-password"><button class="orange">Change Password</button></a>
+    </div>
+</section>
+
+<section class="panel">
+    <h3>➕ Add New Food Item</h3>
+    <form method="POST" action="/add-food">
+        <input type="text" name="name" placeholder="Food name" required>
+        <input type="number" name="price" placeholder="Price (Rs.)" min="0.01" step="0.01" required>
+        <button class="green" type="submit">Add Food</button>
+    </form>
+</section>
+
+<section class="panel">
+    <h3>🍔 Manage Food Items & Prices</h3>
+    <div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Food Name</th>
+                <th>Price</th>
+                <th>Update</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for food in foods %}
+        <tr>
+            <td>{{ food.id }}</td>
+            <td>
+                <form id="food-{{ food.id }}" method="POST" action="/update-food/{{ food.id }}">
+                    <input type="text" name="name" value="{{ food.name }}" required>
+                </form>
+            </td>
+            <td>
+                <input form="food-{{ food.id }}" type="number" name="price" value="{{ food.price }}" min="0.01" step="0.01" required>
+            </td>
+            <td>
+                <button form="food-{{ food.id }}" class="blue" type="submit">Update</button>
+            </td>
+            <td>
+                <form method="POST" action="/delete-food/{{ food.id }}" onsubmit="return confirm('Kya aap ye food item delete karna chahte hain?')">
+                    <button class="red" type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="5">No food items found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+</section>
+
+<section class="panel">
+    <h3>🧾 All Customer Orders</h3>
+    <div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Order ID</th>
+                <th>Customer</th>
+                <th>Date & Time</th>
+                <th>Total</th>
+                <th>Bill</th>
+                <th>Delete</th>
+            </tr>
+        </thead>
+        <tbody>
+        {% for order in orders %}
+        <tr>
+            <td>#{{ order.id }}</td>
+            <td>{{ order.customer }}</td>
+            <td>{{ order.order_date }}</td>
+            <td>Rs. {{ "%.2f"|format(order.total) }}</td>
+            <td><a href="/bill/{{ order.id }}" target="_blank"><button class="blue">View Bill</button></a></td>
+            <td>
+                <form method="POST" action="/delete-order/{{ order.id }}" onsubmit="return confirm('Kya aap ye order aur uske bill items delete karna chahte hain?')">
+                    <button class="red" type="submit">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="6">No orders found.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    <p style="color:#64748b">Latest 100 orders show ho rahe hain. Daily Sales Report mein selected date ke orders dekhein.</p>
+</section>
+
+<section class="panel">
+    <h3>⚠️ Data Management</h3>
+    <p>In actions se order history permanently delete ho sakti hai.</p>
+
+    <form method="POST" action="/delete-today"
+          onsubmit="return confirm('Kya aap aaj ke tamam orders permanently delete karna chahte hain?')">
+        <button class="orange" type="submit">Delete Today's Orders</button>
+    </form>
+
+    <form method="POST" action="/delete-all-history"
+          onsubmit="return confirm('WARNING: Kya aap tamam order history permanently delete karna chahte hain?') && confirm('Aakhri confirmation: Kya aap sure hain?')">
+        <button class="red" type="submit">Delete All History</button>
+    </form>
+</section>
+
+</div>
+</body>
+</html>

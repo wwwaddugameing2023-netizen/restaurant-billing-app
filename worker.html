@@ -1,0 +1,606 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restaurant Billing Dashboard</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f1f5f9;
+            color: #1e293b;
+        }
+
+        header {
+            background: #172554;
+            color: white;
+            padding: 18px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        header h2 {
+            margin: 0;
+        }
+
+        .owner-btn {
+            background: #f59e0b;
+            color: #111827;
+            padding: 11px 17px;
+            border-radius: 7px;
+            text-decoration: none;
+            font-weight: bold;
+        }
+
+        .container {
+            width: 92%;
+            max-width: 1200px;
+            margin: 25px auto;
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1.5fr 1fr;
+            gap: 20px;
+        }
+
+        .panel {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 3px 12px #00000010;
+        }
+
+        h3 {
+            margin-top: 0;
+        }
+
+        .foods {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 12px;
+        }
+
+        .food {
+            border: 1px solid #e2e8f0;
+            padding: 14px;
+            border-radius: 9px;
+        }
+
+        .food h4 {
+            margin: 0 0 8px;
+        }
+
+        .food p {
+            color: #475569;
+        }
+
+        button {
+            border: 0;
+            padding: 10px 13px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .add {
+            background: #2563eb;
+            color: white;
+            width: 100%;
+        }
+
+        .blue {
+            background: #2563eb;
+            color: white;
+        }
+
+        .red {
+            background: #dc2626;
+            color: white;
+        }
+
+        .green {
+            background: #15803d;
+            color: white;
+        }
+
+        .gray {
+            background: #64748b;
+            color: white;
+        }
+
+        input {
+            padding: 11px;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            width: 100%;
+            margin: 7px 0 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 450px;
+        }
+
+        th, td {
+            padding: 10px 5px;
+            border-bottom: 1px solid #e2e8f0;
+            text-align: left;
+        }
+
+        .qty-btn {
+            padding: 5px 9px;
+            margin: 2px;
+        }
+
+        .total {
+            font-size: 23px;
+            font-weight: bold;
+            margin: 20px 0;
+            color: #15803d;
+        }
+
+        .actions {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        #message {
+            margin-top: 12px;
+            font-weight: bold;
+        }
+
+        @media(max-width: 750px) {
+            .layout {
+                grid-template-columns: 1fr;
+            }
+
+            header {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h2>🍔 Restaurant Billing</h2>
+    <a class="owner-btn" href="/login">Owner Login</a>
+</header>
+
+<div class="container">
+
+    <div class="layout">
+
+        <!-- FOOD MENU -->
+        <section class="panel">
+
+            <h3>Food Menu</h3>
+
+            <div class="foods">
+
+                {% for food in foods %}
+
+                <div class="food">
+
+                    <h4>{{ food.name }}</h4>
+
+                    <p>
+                        Rs. {{ "%.2f"|format(food.price) }}
+                    </p>
+
+                    <button
+                        type="button"
+                        class="add"
+                        data-id="{{ food.id }}"
+                        data-name="{{ food.name }}"
+                        data-price="{{ food.price }}">
+
+                        Add to Cart
+
+                    </button>
+
+                </div>
+
+                {% else %}
+
+                <p>No food items available.</p>
+
+                {% endfor %}
+
+            </div>
+
+        </section>
+
+        <!-- CUSTOMER BILL -->
+        <section class="panel">
+
+            <h3>🛒 Customer Bill</h3>
+
+            <label>Customer Name</label>
+
+            <input
+                type="text"
+                id="customer"
+                placeholder="Enter customer name">
+
+            <div style="overflow-x:auto">
+
+                <table>
+
+                    <thead>
+                        <tr>
+                            <th>Item</th>
+                            <th>Price</th>
+                            <th>Qty</th>
+                            <th>Total</th>
+                            <th>Remove</th>
+                        </tr>
+                    </thead>
+
+                    <tbody id="cart-body">
+
+                        <tr>
+                            <td colspan="5">Cart is empty</td>
+                        </tr>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            <div class="total">
+
+                Total: Rs.
+                <span id="grand-total">0.00</span>
+
+            </div>
+
+            <div class="actions">
+
+                <button
+                    type="button"
+                    class="gray"
+                    id="clear-btn">
+
+                    Clear Cart
+
+                </button>
+
+                <button
+                    type="button"
+                    class="green"
+                    id="complete-btn">
+
+                    Complete Order
+
+                </button>
+
+            </div>
+
+            <div id="message"></div>
+
+        </section>
+
+    </div>
+
+</div>
+
+<script>
+
+    let cart = [];
+
+    // ADD TO CART BUTTONS
+    document.querySelectorAll(".add").forEach(button => {
+
+        button.addEventListener("click", function () {
+
+            const id = Number(this.dataset.id);
+            const name = this.dataset.name;
+            const price = Number(this.dataset.price);
+
+            addToCart(id, name, price);
+
+        });
+
+    });
+
+
+    // ADD ITEM
+    function addToCart(id, name, price) {
+
+        if (!Number.isFinite(id) || !Number.isFinite(price)) {
+            showMessage("Food information is incorrect.", true);
+            return;
+        }
+
+        let existing = cart.find(item => item.id === id);
+
+        if (existing) {
+
+            existing.quantity++;
+
+        } else {
+
+            cart.push({
+                id: id,
+                name: name,
+                price: price,
+                quantity: 1
+            });
+
+        }
+
+        renderCart();
+
+        showMessage(name + " added to cart.");
+
+    }
+
+
+    // CHANGE QUANTITY
+    function changeQuantity(id, amount) {
+
+        let item = cart.find(item => item.id === id);
+
+        if (!item) return;
+
+        item.quantity += amount;
+
+        if (item.quantity <= 0) {
+
+            cart = cart.filter(item => item.id !== id);
+
+        }
+
+        renderCart();
+
+    }
+
+
+    // REMOVE ITEM
+    function removeItem(id) {
+
+        cart = cart.filter(item => item.id !== id);
+
+        renderCart();
+
+        showMessage("Item removed.");
+
+    }
+
+
+    // CLEAR CART
+    function clearCart() {
+
+        if (cart.length === 0) {
+
+            showMessage("Cart is already empty.", true);
+            return;
+
+        }
+
+        if (confirm("Are you sure you want to clear the cart?")) {
+
+            cart = [];
+
+            renderCart();
+
+            showMessage("Cart cleared successfully.");
+
+        }
+
+    }
+
+
+    // DISPLAY CART
+    function renderCart() {
+
+        const body = document.getElementById("cart-body");
+
+        body.innerHTML = "";
+
+        let total = 0;
+
+        if (cart.length === 0) {
+
+            body.innerHTML =
+                '<tr><td colspan="5">Cart is empty</td></tr>';
+
+        }
+
+        cart.forEach(item => {
+
+            let lineTotal = item.price * item.quantity;
+
+            total += lineTotal;
+
+            const row = document.createElement("tr");
+
+            const nameCell = document.createElement("td");
+            nameCell.textContent = item.name;
+
+            const priceCell = document.createElement("td");
+            priceCell.textContent = item.price.toFixed(2);
+
+            const qtyCell = document.createElement("td");
+
+            const minus = document.createElement("button");
+            minus.className = "qty-btn gray";
+            minus.textContent = "−";
+
+            minus.addEventListener("click", () => {
+                changeQuantity(item.id, -1);
+            });
+
+            const plus = document.createElement("button");
+            plus.className = "qty-btn blue";
+            plus.textContent = "+";
+
+            plus.addEventListener("click", () => {
+                changeQuantity(item.id, 1);
+            });
+
+            qtyCell.append(minus);
+            qtyCell.append(document.createTextNode(" " + item.quantity + " "));
+            qtyCell.append(plus);
+
+            const totalCell = document.createElement("td");
+            totalCell.textContent = lineTotal.toFixed(2);
+
+            const removeCell = document.createElement("td");
+
+            const removeButton = document.createElement("button");
+            removeButton.className = "red qty-btn";
+            removeButton.textContent = "X";
+
+            removeButton.addEventListener("click", () => {
+                removeItem(item.id);
+            });
+
+            removeCell.appendChild(removeButton);
+
+            row.append(
+                nameCell,
+                priceCell,
+                qtyCell,
+                totalCell,
+                removeCell
+            );
+
+            body.appendChild(row);
+
+        });
+
+        document.getElementById("grand-total").textContent =
+            total.toFixed(2);
+
+    }
+
+
+    // SHOW MESSAGE
+    function showMessage(message, error = false) {
+
+        const box = document.getElementById("message");
+
+        box.textContent = message;
+
+        box.style.color = error ? "#dc2626" : "#15803d";
+
+    }
+
+
+    // CLEAR CART BUTTON
+    document.getElementById("clear-btn")
+        .addEventListener("click", clearCart);
+
+
+    // COMPLETE ORDER
+    document.getElementById("complete-btn")
+        .addEventListener("click", completeOrder);
+
+
+    // SAVE ORDER
+    async function completeOrder() {
+
+        if (cart.length === 0) {
+
+            showMessage("Please select food items first.", true);
+            return;
+
+        }
+
+        const button = document.getElementById("complete-btn");
+
+        button.disabled = true;
+        button.textContent = "Saving...";
+
+        try {
+
+            const response = await fetch("/create-order", {
+
+                method: "POST",
+
+                headers: {
+                    "Content-Type": "application/json"
+                },
+
+                body: JSON.stringify({
+
+                    customer: document.getElementById("customer").value.trim(),
+
+                    items: cart.map(item => ({
+
+                        id: item.id,
+                        quantity: item.quantity
+
+                    }))
+
+                })
+
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+
+                throw new Error(
+                    result.error || "Order could not be saved."
+                );
+
+            }
+
+            if (!result.bill_url) {
+
+                throw new Error("Bill link was not received.");
+
+            }
+
+            cart = [];
+
+            renderCart();
+
+            document.getElementById("customer").value = "";
+
+            showMessage("Order saved successfully!");
+
+            window.location.href = result.bill_url;
+
+        } catch (error) {
+
+            showMessage(error.message, true);
+
+        } finally {
+
+            button.disabled = false;
+            button.textContent = "Complete Order";
+
+        }
+
+    }
+
+    renderCart();
+
+</script>
+
+</body>
+</html>
